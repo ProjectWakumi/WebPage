@@ -132,4 +132,3 @@
   .button,.button:after,.brand,.site-header nav a,.social-card,.social-card:after,.social-icon,.card-link,.card-link span,.project-card,.project-art,.portrait-card,.profile-panel,.portrait-glow,.portrait-monogram,.donate-card,.donate-card:after,.donate-icon,.donate-link,.donate-link span,.music-track-button,.music-track-button:before,.floating-player,.floating-player button,.floating-volume{transition:none!important;animation:none!important}
   .button:hover,.brand:hover,.social-card:hover,.social-card:hover .social-icon,.project-card:hover,.project-card:hover .art-symbol,.portrait-card:hover,.profile-panel:hover,.donate-card:hover,.donate-card:hover .donate-icon,.donate-card:hover .donate-link span,.music-track-button:hover,.music-track-button:hover:before,.floating-player:hover,.floating-player button:hover:not(:disabled){transform:none}
 }
-:root{--bg:#15324d}
