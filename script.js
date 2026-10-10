@@ -84,45 +84,60 @@
     revealItems.forEach(item => revealObserver.observe(item));
   }
 
+  const audio = document.getElementById("musicAudio");
+  const musicPlay = document.getElementById("musicPlay");
+  const musicMute = document.getElementById("musicMute");
+  const musicVolume = document.getElementById("musicVolume");
   const musicStatus = document.getElementById("musicStatus");
   const musicTrackList = document.getElementById("musicTrackList");
-  const musicVideo = document.getElementById("musicVideo");
   const nowPlayingTitle = document.getElementById("nowPlayingTitle");
-  const waveStatus = document.getElementById("waveStatus");
-  const floatingPlayer = document.getElementById("floatingPlayer");
   const waveCanvas = document.getElementById("musicWave");
   const waveContext = waveCanvas.getContext("2d");
+  const savedVolume = Number(localStorage.getItem("wakumi-music-volume"));
+  let volume = Number.isFinite(savedVolume) && localStorage.getItem("wakumi-music-volume") !== null
+    ? Math.min(100, Math.max(0, savedVolume))
+    : 50;
+  let isMuted = localStorage.getItem("wakumi-music-muted") === "true";
   let tracks = [];
   let currentTrackIndex = 0;
-  let player;
-  let playerReady = false;
-  let pendingAutoplay = false;
-  let isPlaying = false;
+  let audioContext;
+  let analyser;
+  let frequencyData;
 
   function setMusicStatus(message) {
     musicStatus.textContent = message;
   }
 
-  function updatePlaybackState(playing, label) {
-    isPlaying = playing;
-    floatingPlayer.classList.toggle("is-playing", playing);
-    waveStatus.textContent = label;
-    const currentTrack = musicTrackList.querySelector('[aria-current="true"]');
-    currentTrack?.classList.toggle("is-playing", playing);
+  function updateVolumeControls() {
+    musicVolume.value = String(volume);
+    musicVolume.setAttribute("aria-valuetext", `${volume}%`);
+    musicMute.textContent = isMuted ? "🔇" : "🔊";
+    musicMute.setAttribute("aria-label", isMuted ? "เปิดเสียง" : "ปิดเสียง");
+    musicMute.setAttribute("aria-pressed", String(isMuted));
   }
 
-  function drawWaveform(timestamp = 0) {
+  function updatePlaybackControls() {
+    const isPlaying = !audio.paused && !audio.ended;
+    musicPlay.textContent = isPlaying ? "⏸" : "▶";
+    musicPlay.setAttribute("aria-label", isPlaying ? "หยุดเพลง" : "เล่นเพลง");
+    const currentTrack = musicTrackList.querySelector('[aria-current="true"]');
+    currentTrack?.classList.toggle("is-playing", isPlaying);
+  }
+
+  function drawWaveform() {
     const { width, height } = waveCanvas;
     waveContext.clearRect(0, 0, width, height);
     const bars = 24;
     const gap = 2;
     const barWidth = (width - gap * (bars - 1)) / bars;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const time = timestamp / 1000;
+    const isPlaying = analyser && !audio.paused && !audio.ended;
+
+    if (isPlaying) analyser.getByteFrequencyData(frequencyData);
 
     for (let index = 0; index < bars; index += 1) {
-      const pulse = Math.abs(Math.sin(time * 5 + index * 0.63));
-      const magnitude = isPlaying && !reducedMotion ? 0.16 + pulse * 0.72 : 0.1;
+      const magnitude = isPlaying
+        ? frequencyData[Math.floor(index * frequencyData.length / bars)] / 255
+        : 0.08;
       const barHeight = Math.max(3, magnitude * height);
       waveContext.fillStyle = isPlaying ? "#c084fc" : "#745695";
       waveContext.fillRect(index * (barWidth + gap), (height - barHeight) / 2, barWidth, barHeight);
@@ -131,59 +146,16 @@
     window.requestAnimationFrame(drawWaveform);
   }
 
-  function initializeYouTubePlayer() {
-    if (player || !window.YT?.Player) return;
-    player = new window.YT.Player("musicVideo", {
-      events: {
-        onReady: () => {
-          playerReady = true;
-          if (tracks.length === 0) return;
-          const track = tracks[currentTrackIndex];
-          if (pendingAutoplay) player.loadVideoById(track.videoId);
-          else player.cueVideoById(track.videoId);
-          pendingAutoplay = false;
-        },
-        onStateChange: event => {
-          const states = window.YT.PlayerState;
-          if (event.data === states.PLAYING) {
-            updatePlaybackState(true, "กำลังเล่น");
-            setMusicStatus(`กำลังเล่นเพลง: ${tracks[currentTrackIndex].title}`);
-          } else if (event.data === states.PAUSED) {
-            updatePlaybackState(false, "หยุดชั่วคราว");
-            setMusicStatus(`หยุดชั่วคราว: ${tracks[currentTrackIndex].title}`);
-          } else if (event.data === states.ENDED) {
-            updatePlaybackState(false, "เล่นจบแล้ว");
-            setMusicStatus(`เล่นจบแล้ว: ${tracks[currentTrackIndex].title}`);
-          } else if (event.data === states.BUFFERING) {
-            updatePlaybackState(false, "กำลังโหลด");
-          } else if (event.data === states.CUED) {
-            updatePlaybackState(false, "พร้อมเล่น");
-          }
-        },
-        onError: event => {
-          updatePlaybackState(false, "เล่นวิดีโอไม่ได้");
-          setMusicStatus(`YouTube เล่นวิดีโอนี้ไม่ได้ (รหัส ${event.data})`);
-        }
-      }
-    });
-  }
-
-  function loadYouTubeAPI() {
-    if (window.YT?.Player) {
-      initializeYouTubePlayer();
-      return;
+  async function prepareAudioAnalysis() {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 128;
+      audioContext.createMediaElementSource(audio).connect(analyser);
+      analyser.connect(audioContext.destination);
+      frequencyData = new Uint8Array(analyser.frequencyBinCount);
     }
-
-    const previousCallback = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = () => {
-      if (typeof previousCallback === "function") previousCallback();
-      initializeYouTubePlayer();
-    };
-    const apiScript = document.createElement("script");
-    apiScript.src = "https://www.youtube.com/iframe_api";
-    apiScript.async = true;
-    apiScript.onerror = () => setMusicStatus("โหลดตัวควบคุม YouTube ไม่สำเร็จ แต่ยังเล่นผ่านตัวเล่นได้");
-    document.head.append(apiScript);
+    if (audioContext.state === "suspended") await audioContext.resume();
   }
 
   function markCurrentTrack() {
@@ -197,27 +169,32 @@
     });
   }
 
-  function selectTrack(index, autoplay = false) {
+  async function playCurrentTrack() {
+    try {
+      await prepareAudioAnalysis();
+      await audio.play();
+      updatePlaybackControls();
+      setMusicStatus(`กำลังเล่น: ${tracks[currentTrackIndex].title}`);
+    } catch (error) {
+      updatePlaybackControls();
+      setMusicStatus(`เล่นเพลงไม่ได้: ${error.message}`);
+    }
+  }
+
+  async function selectTrack(index, autoplay = false) {
     if (tracks.length === 0) return;
     currentTrackIndex = (index + tracks.length) % tracks.length;
     const track = tracks[currentTrackIndex];
-    if (!/^[\w-]{11}$/.test(track.videoId)) {
-      setMusicStatus(`ลิงก์วิดีโอไม่ถูกต้อง: ${track.title}`);
-      return;
-    }
+    audio.src = track.src;
     nowPlayingTitle.textContent = track.title;
     markCurrentTrack();
     musicTrackList.querySelectorAll(".music-track-button").forEach(button => {
       button.classList.remove("is-playing");
     });
-    updatePlaybackState(false, autoplay ? "กำลังเริ่มเล่น" : "พร้อมเล่น");
-    setMusicStatus(autoplay ? `กำลังเปิดเพลง: ${track.title}` : `เลือกเพลง: ${track.title}`);
-    if (playerReady) {
-      if (autoplay) player.loadVideoById(track.videoId);
-      else player.cueVideoById(track.videoId);
-    } else {
-      pendingAutoplay = autoplay;
-    }
+    audio.load();
+    setMusicStatus(`เลือกเพลง: ${track.title}`);
+    if (autoplay) await playCurrentTrack();
+    else updatePlaybackControls();
   }
 
   function renderTrackList() {
@@ -240,27 +217,64 @@
       const response = await fetch("assets/music/playlist.json", { cache: "no-store" });
       if (!response.ok) throw new Error(`รายการเพลงตอบกลับ ${response.status}`);
       const playlist = await response.json();
-      if (!Array.isArray(playlist) || playlist.length === 0) {
-        throw new Error("ไม่พบรายการวิดีโอเพลง");
+      if (!Array.isArray(playlist)) {
+        throw new Error("รูปแบบรายการเพลงไม่ถูกต้อง");
       }
 
       tracks = playlist;
       renderTrackList();
-      selectTrack(0);
-      setMusicStatus(`เลือกรับฟังได้ · ${tracks.length} เพลง`);
+      if (tracks.length === 0) {
+        nowPlayingTitle.textContent = "ยังไม่มีเพลง";
+        document.getElementById("floatingPlayer").style.display = "none";
+        setMusicStatus("ยังไม่มีเพลงที่ได้รับอนุญาตให้เผยแพร่");
+        return;
+      }
+
+      await selectTrack(0);
+      [musicPlay, musicMute, musicVolume].forEach(control => {
+        control.disabled = false;
+      });
+      setMusicStatus(`พร้อมเล่น · ${tracks.length} เพลง`);
     } catch (error) {
       nowPlayingTitle.textContent = "โหลดรายการเพลงไม่สำเร็จ";
       setMusicStatus(`โหลดรายการเพลงไม่สำเร็จ: ${error.message}`);
     }
   }
 
-  const videoUrl = new URL(musicVideo.src);
-  videoUrl.searchParams.set("enablejsapi", "1");
-  if (window.location.origin.startsWith("http")) {
-    videoUrl.searchParams.set("origin", window.location.origin);
-  }
-  musicVideo.src = videoUrl.toString();
+  musicPlay.addEventListener("click", () => {
+    if (audio.paused) playCurrentTrack();
+    else audio.pause();
+  });
+
+  musicVolume.addEventListener("input", () => {
+    volume = Number(musicVolume.value);
+    audio.volume = volume / 100;
+    if (isMuted && volume > 0) {
+      isMuted = false;
+      audio.muted = false;
+    }
+    localStorage.setItem("wakumi-music-volume", String(volume));
+    localStorage.setItem("wakumi-music-muted", String(isMuted));
+    updateVolumeControls();
+  });
+
+  musicMute.addEventListener("click", () => {
+    isMuted = !isMuted;
+    audio.muted = isMuted;
+    localStorage.setItem("wakumi-music-muted", String(isMuted));
+    updateVolumeControls();
+  });
+
+  audio.volume = volume / 100;
+  audio.muted = isMuted;
+  audio.addEventListener("play", updatePlaybackControls);
+  audio.addEventListener("pause", updatePlaybackControls);
+  audio.addEventListener("ended", () => selectTrack(currentTrackIndex + 1, true));
+  audio.addEventListener("error", () => {
+    const track = tracks[currentTrackIndex];
+    if (track) setMusicStatus(`โหลดเพลงไม่สำเร็จ: ${track.title}`);
+  });
+  updateVolumeControls();
   drawWaveform();
   loadPlaylist();
-  loadYouTubeAPI();
 })();

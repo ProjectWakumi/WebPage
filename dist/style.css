@@ -130,9 +130,3 @@
   .button,.button:after,.brand,.site-header nav a,.social-card,.social-card:after,.social-icon,.card-link,.card-link span,.project-card,.project-art,.portrait-card,.profile-panel,.portrait-glow,.portrait-monogram,.donate-card,.donate-card:after,.donate-icon,.donate-link,.donate-link span,.music-track-button,.music-track-button:before,.floating-player,.floating-player button,.floating-volume{transition:none!important;animation:none!important}
   .button:hover,.brand:hover,.social-card:hover,.social-card:hover .social-icon,.project-card:hover,.project-card:hover .art-symbol,.portrait-card:hover,.profile-panel:hover,.donate-card:hover,.donate-card:hover .donate-icon,.donate-card:hover .donate-link span,.music-track-button:hover,.music-track-button:hover:before,.floating-player:hover,.floating-player button:hover:not(:disabled){transform:none}
 }
-
-.music-video{position:relative;width:100%;aspect-ratio:16/9;margin-bottom:14px;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#080610}
-.music-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.floating-player{width:min(320px,calc(100vw - 32px))}
-.floating-player.is-playing{border-color:rgba(192,132,252,.82);box-shadow:0 0 30px rgba(145,65,255,.42)}
-@media(max-width:640px){.floating-player{width:min(300px,calc(100vw - 24px))}}
