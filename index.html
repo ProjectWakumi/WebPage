@@ -164,6 +164,13 @@
     </section>
   </main>
   <footer><a class="brand footer-brand" href="#home">✦ Wakumi</a><span>Streamer · Minecraft · Discord Bot</span><span>© <span id="year"></span> Wakumi</span></footer>
+  <aside class="floating-player" id="floatingPlayer" aria-label="สถานะเพลง">
+    <canvas class="floating-wave" id="musicWave" width="144" height="40" aria-label="คลื่นตกแต่ง แสดงเมื่อเพลงกำลังเล่น"></canvas>
+    <div class="floating-track" aria-live="polite">
+      <span class="floating-track-label" id="waveStatus">เลือกเพลงเพื่อเริ่มเล่น</span>
+      <span class="floating-track-title" id="nowPlayingTitle">ยังไม่มีเพลงที่เลือก</span>
+    </div>
+  </aside>
   <button class="back-to-top" id="backToTop" type="button" aria-label="กลับขึ้นด้านบน">↑</button>
   <script src="script.js"></script>
 </body>

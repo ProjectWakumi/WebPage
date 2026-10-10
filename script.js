@@ -87,11 +87,103 @@
   const musicStatus = document.getElementById("musicStatus");
   const musicTrackList = document.getElementById("musicTrackList");
   const musicVideo = document.getElementById("musicVideo");
+  const nowPlayingTitle = document.getElementById("nowPlayingTitle");
+  const waveStatus = document.getElementById("waveStatus");
+  const floatingPlayer = document.getElementById("floatingPlayer");
+  const waveCanvas = document.getElementById("musicWave");
+  const waveContext = waveCanvas.getContext("2d");
   let tracks = [];
   let currentTrackIndex = 0;
+  let player;
+  let playerReady = false;
+  let pendingAutoplay = false;
+  let isPlaying = false;
 
   function setMusicStatus(message) {
     musicStatus.textContent = message;
+  }
+
+  function updatePlaybackState(playing, label) {
+    isPlaying = playing;
+    floatingPlayer.classList.toggle("is-playing", playing);
+    waveStatus.textContent = label;
+    const currentTrack = musicTrackList.querySelector('[aria-current="true"]');
+    currentTrack?.classList.toggle("is-playing", playing);
+  }
+
+  function drawWaveform(timestamp = 0) {
+    const { width, height } = waveCanvas;
+    waveContext.clearRect(0, 0, width, height);
+    const bars = 24;
+    const gap = 2;
+    const barWidth = (width - gap * (bars - 1)) / bars;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const time = timestamp / 1000;
+
+    for (let index = 0; index < bars; index += 1) {
+      const pulse = Math.abs(Math.sin(time * 5 + index * 0.63));
+      const magnitude = isPlaying && !reducedMotion ? 0.16 + pulse * 0.72 : 0.1;
+      const barHeight = Math.max(3, magnitude * height);
+      waveContext.fillStyle = isPlaying ? "#c084fc" : "#745695";
+      waveContext.fillRect(index * (barWidth + gap), (height - barHeight) / 2, barWidth, barHeight);
+    }
+
+    window.requestAnimationFrame(drawWaveform);
+  }
+
+  function initializeYouTubePlayer() {
+    if (player || !window.YT?.Player) return;
+    player = new window.YT.Player("musicVideo", {
+      events: {
+        onReady: () => {
+          playerReady = true;
+          if (tracks.length === 0) return;
+          const track = tracks[currentTrackIndex];
+          if (pendingAutoplay) player.loadVideoById(track.videoId);
+          else player.cueVideoById(track.videoId);
+          pendingAutoplay = false;
+        },
+        onStateChange: event => {
+          const states = window.YT.PlayerState;
+          if (event.data === states.PLAYING) {
+            updatePlaybackState(true, "กำลังเล่น");
+            setMusicStatus(`กำลังเล่นเพลง: ${tracks[currentTrackIndex].title}`);
+          } else if (event.data === states.PAUSED) {
+            updatePlaybackState(false, "หยุดชั่วคราว");
+            setMusicStatus(`หยุดชั่วคราว: ${tracks[currentTrackIndex].title}`);
+          } else if (event.data === states.ENDED) {
+            updatePlaybackState(false, "เล่นจบแล้ว");
+            setMusicStatus(`เล่นจบแล้ว: ${tracks[currentTrackIndex].title}`);
+          } else if (event.data === states.BUFFERING) {
+            updatePlaybackState(false, "กำลังโหลด");
+          } else if (event.data === states.CUED) {
+            updatePlaybackState(false, "พร้อมเล่น");
+          }
+        },
+        onError: event => {
+          updatePlaybackState(false, "เล่นวิดีโอไม่ได้");
+          setMusicStatus(`YouTube เล่นวิดีโอนี้ไม่ได้ (รหัส ${event.data})`);
+        }
+      }
+    });
+  }
+
+  function loadYouTubeAPI() {
+    if (window.YT?.Player) {
+      initializeYouTubePlayer();
+      return;
+    }
+
+    const previousCallback = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof previousCallback === "function") previousCallback();
+      initializeYouTubePlayer();
+    };
+    const apiScript = document.createElement("script");
+    apiScript.src = "https://www.youtube.com/iframe_api";
+    apiScript.async = true;
+    apiScript.onerror = () => setMusicStatus("โหลดตัวควบคุม YouTube ไม่สำเร็จ แต่ยังเล่นผ่านตัวเล่นได้");
+    document.head.append(apiScript);
   }
 
   function markCurrentTrack() {
@@ -113,11 +205,19 @@
       setMusicStatus(`ลิงก์วิดีโอไม่ถูกต้อง: ${track.title}`);
       return;
     }
-
-    musicVideo.src = `https://www.youtube-nocookie.com/embed/${track.videoId}?rel=0&autoplay=${autoplay ? 1 : 0}`;
-    musicVideo.title = `เล่นเพลง ${track.title} จาก YouTube`;
+    nowPlayingTitle.textContent = track.title;
     markCurrentTrack();
+    musicTrackList.querySelectorAll(".music-track-button").forEach(button => {
+      button.classList.remove("is-playing");
+    });
+    updatePlaybackState(false, autoplay ? "กำลังเริ่มเล่น" : "พร้อมเล่น");
     setMusicStatus(autoplay ? `กำลังเปิดเพลง: ${track.title}` : `เลือกเพลง: ${track.title}`);
+    if (playerReady) {
+      if (autoplay) player.loadVideoById(track.videoId);
+      else player.cueVideoById(track.videoId);
+    } else {
+      pendingAutoplay = autoplay;
+    }
   }
 
   function renderTrackList() {
@@ -149,9 +249,18 @@
       selectTrack(0);
       setMusicStatus(`เลือกรับฟังได้ · ${tracks.length} เพลง`);
     } catch (error) {
+      nowPlayingTitle.textContent = "โหลดรายการเพลงไม่สำเร็จ";
       setMusicStatus(`โหลดรายการเพลงไม่สำเร็จ: ${error.message}`);
     }
   }
 
+  const videoUrl = new URL(musicVideo.src);
+  videoUrl.searchParams.set("enablejsapi", "1");
+  if (window.location.origin.startsWith("http")) {
+    videoUrl.searchParams.set("origin", window.location.origin);
+  }
+  musicVideo.src = videoUrl.toString();
+  drawWaveform();
   loadPlaylist();
+  loadYouTubeAPI();
 })();
