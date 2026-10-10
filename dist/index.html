@@ -144,9 +144,12 @@
       <div class="section-heading">
         <p class="eyebrow">MUSIC PLAYLIST</p>
         <h2>เพลงที่เลือกไว้</h2>
-        <p>เลือกเพลงจากรายการ หรือกดเล่นจากแถบเพลงมุมล่างซ้าย</p>
+        <p>รับฟังเพลงผ่านวิดีโอจากช่องทางทางการบน YouTube</p>
       </div>
       <div class="music-player">
+        <div class="music-video">
+          <iframe id="musicVideo" title="เครื่องเล่นเพลง YouTube" src="https://www.youtube-nocookie.com/embed/Lxeq3_uWib8?rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe>
+        </div>
         <ol class="music-track-list" id="musicTrackList" aria-label="รายการเพลง"></ol>
         <p class="music-status" id="musicStatus" role="status">กำลังอ่านรายการเพลง…</p>
       </div>
@@ -161,17 +164,6 @@
     </section>
   </main>
   <footer><a class="brand footer-brand" href="#home">✦ Wakumi</a><span>Streamer · Minecraft · Discord Bot</span><span>© <span id="year"></span> Wakumi</span></footer>
-  <audio id="musicAudio" preload="metadata"></audio>
-  <aside class="floating-player" id="floatingPlayer" aria-label="เครื่องเล่นเพลง">
-    <button class="floating-play" id="musicPlay" type="button" aria-label="เล่นเพลง" disabled>▶</button>
-    <canvas class="floating-wave" id="musicWave" width="144" height="40" aria-label="คลื่นเสียงจริงของเพลง"></canvas>
-    <div class="floating-track" aria-live="polite">
-      <span class="floating-track-label">กำลังเล่น</span>
-      <span class="floating-track-title" id="nowPlayingTitle">กำลังอ่านรายการเพลง…</span>
-    </div>
-    <button class="floating-mute" id="musicMute" type="button" aria-label="ปิดเสียง" aria-pressed="false" disabled>🔊</button>
-    <input class="floating-volume" id="musicVolume" type="range" min="0" max="100" step="1" value="50" aria-label="ระดับเสียง" disabled>
-  </aside>
   <button class="back-to-top" id="backToTop" type="button" aria-label="กลับขึ้นด้านบน">↑</button>
   <script src="script.js"></script>
 </body>
