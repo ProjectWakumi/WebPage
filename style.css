@@ -131,3 +131,35 @@
   .button:hover,.brand:hover,.social-card:hover,.social-card:hover .social-icon,.project-card:hover,.project-card:hover .art-symbol,.portrait-card:hover,.profile-panel:hover,.donate-card:hover,.donate-card:hover .donate-icon,.donate-card:hover .donate-link span,.music-track-button:hover,.music-track-button:hover:before,.floating-player:hover,.floating-player button:hover:not(:disabled){transform:none}
 }
 .status-strip{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:22px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(15,8,27,.5);color:#e5d4ff;font-size:13px;backdrop-filter:blur(10px)}.status-pill{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;background:linear-gradient(110deg,#8739d7,#bd75ff);color:#fff;font-size:10px;letter-spacing:2px;font-weight:600}.hero-actions{margin-top:24px}
+
+/* Social / Community + Bot All One */
+.social-section{padding-top:36px;padding-bottom:30px}
+.social-grid-duo{grid-template-columns:repeat(2,minmax(0,1fr));max-width:840px;margin:0 auto}
+.social-grid-duo .social-card{display:flex;flex-direction:column;align-items:flex-start;min-height:280px}
+.social-github{--brand:#f1e6ff}.social-steam{--brand:#8cc8ff}
+.social-head{display:flex;align-items:center;gap:16px;width:100%}
+.social-head .card-kicker{margin:0}
+.social-title h3{line-height:1.3}
+.social-grid-duo .social-icon{flex:none;color:var(--brand);border-color:color-mix(in srgb,var(--brand) 55%,transparent);box-shadow:0 0 22px color-mix(in srgb,var(--brand) 18%,transparent)}
+.social-icon svg{width:28px;height:28px;fill:currentColor}
+.social-card>p.social-handle{min-height:0;margin:18px 0 0;color:#e2c6ff;font-size:14px;font-weight:400}
+.social-grid-duo .social-card>p:not(.card-kicker):not(.social-handle){margin:4px 0 20px;min-height:0}
+.social-button{margin-top:auto;position:relative;z-index:1}
+.button:focus-visible,.social-button:focus-visible{outline:2px solid #e0baff;outline-offset:3px}
+@media(max-width:640px){.social-grid-duo{grid-template-columns:1fr}.social-grid-duo .social-card{min-height:240px}}
+
+.bot-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.bot-head .eyebrow{margin:0}
+.status-badge{display:inline-flex;align-items:center;gap:8px;padding:4px 12px;border:1px solid rgba(255,199,102,.55);border-radius:999px;background:rgba(255,184,77,.1);color:#ffd48a;font-size:10px;font-weight:600;letter-spacing:2px;white-space:nowrap}
+.status-badge:before{width:7px;height:7px;border-radius:50%;background:#ffc766;box-shadow:0 0 10px #ffb84d;content:"";animation:statusPulse 2.2s ease-in-out infinite}
+@keyframes statusPulse{50%{opacity:.35}}
+.project-info .bot-tagline{margin:-4px 0 12px;color:#e2c6ff;font-size:15px;font-weight:400}
+.bot-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0 0}
+.bot-meta div{padding:9px 12px;border:1px solid rgba(183,120,255,.18);border-radius:10px;background:rgba(118,51,182,.08)}
+.bot-meta dt{color:#a994c2;font-size:10px;line-height:1.5}
+.bot-meta dd{margin:0;color:#f0e6ff;font-size:13px}
+.bot-actions{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;margin-top:22px}
+.bot-invite{padding:12px 26px;font-weight:500}
+.bot-note{flex:1 1 210px;margin:0;color:#a998bd;font-size:12px;line-height:1.6}
+@media(max-width:640px){.bot-meta{gap:8px}.bot-meta div{padding:8px 10px}.bot-meta dd{font-size:12px}.bot-invite{width:100%}}
+.social-button span{margin-left:8px}
